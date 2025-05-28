@@ -196,6 +196,29 @@
             border: 1px solid #D4B2F0;
         }
 
+        .footer {
+            padding: 16px 24px;
+            border-top: 1px solid #E8D5F2;
+            text-align: center;
+            background: #F8F5FF;
+            font-size: 12px;
+            color: #A67FB5;
+        }
+
+        .footer a {
+            color: #7B4397;
+            text-decoration: underline;
+            font-weight: 600;
+            background: #F0E6FF;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .footer a:hover {
+            color: #6B2C91;
+            background: #E8D5F2;
+        }
+
         @media (max-width: 640px) {
             .container {
                 margin: 0;
@@ -212,7 +235,7 @@
     <div class="container">
         <div class="header">
             <h1>NFT Holder Snapshot Tool</h1>
-            <p>Get all holders of your NFT collection in seconds</p>
+            <p>get holders of an NFT collection and download for WL</p>
         </div>
 
         <div class="form-section">
@@ -239,6 +262,8 @@
                 <div class="small-text">
                     Get your free API key from 
                     <a href="https://docs.blockvision.org" target="_blank">BlockVision</a>
+                    <br>
+                    ⚠️ <strong>On free Blockvision tier, you will be able to get a maximum of 1500 holders.</strong>
                 </div>
             </div>
 
@@ -287,6 +312,11 @@
                     📝 Copy Addresses
                 </button>
             </div>
+        </div>
+
+        <div class="footer">
+            tool vibecoded by iced-latte fueled <a href="https://x.com/wagmigently" target="_blank">Karma</a> with no prior coding experience<br>
+            use at your own risk :P
         </div>
     </div>
 
@@ -343,8 +373,24 @@
                 }
             });
 
+            if (response.status === 429) {
+                throw new Error('You\'ve used all your free API calls (30 limit). Wait 24 hours for reset or upgrade to paid plan.');
+            }
+
+            if (response.status === 401) {
+                throw new Error('Invalid API key. Check your BlockVision API key and try again.');
+            }
+
+            if (response.status === 403) {
+                throw new Error('API access denied. Your BlockVision account may need verification or upgrade.');
+            }
+
+            if (response.status === 404) {
+                throw new Error('Contract not found. Check your contract address is correct and deployed on Monad testnet.');
+            }
+
             if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Connection failed (${response.status}). Check your internet and try again.`);
             }
 
             return await response.json();
@@ -361,12 +407,12 @@
 
             // Validate inputs
             if (!contractAddress || !apiKey) {
-                showError('Please enter both contract address and API key');
+                showError('Missing information: Please enter both your contract address and API key');
                 return;
             }
 
             if (!contractAddress.startsWith('0x') || contractAddress.length !== 42) {
-                showError('Invalid contract address format');
+                showError('Invalid contract address: Should start with 0x and be 42 characters long');
                 return;
             }
 
@@ -389,7 +435,7 @@
                     const result = await fetchPage(pageIndex);
                     
                     if (!result.result || !result.result.data) {
-                        throw new Error('Invalid API response format');
+                        throw new Error('Invalid response from API. The contract might not be a valid NFT collection.');
                     }
 
                     const holders = result.result.data;
@@ -414,14 +460,23 @@
                     }
 
                     // Rate limiting - be nice to the API
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
 
                 document.getElementById('pagesFetched').textContent = pagesFetched;
                 showResults();
 
             } catch (error) {
-                showError(`Error: ${error.message}`);
+                let errorMessage = error.message;
+                
+                // Add helpful context for common issues
+                if (errorMessage.includes('fetch')) {
+                    errorMessage = 'Connection failed. Check your internet connection and try again.';
+                } else if (errorMessage.includes('CORS')) {
+                    errorMessage = 'Browser security error. Try refreshing the page and try again.';
+                }
+                
+                showError(errorMessage);
                 document.getElementById('progressSection').style.display = 'none';
             } finally {
                 // Re-enable button
