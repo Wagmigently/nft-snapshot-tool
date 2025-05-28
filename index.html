@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Holder Snapshot Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #E8D5F2 0%, #C8A8E9 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #FDFCFF;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(139, 90, 150, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #9B7EBD;
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .form-section {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #7B4397;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #E8D5F2;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: #FDFCFF;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #C8A8E9;
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #A67FB5;
+            margin-top: 4px;
+        }
+
+        .fetch-btn {
+            width: 100%;
+            background: #C8A8E9;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .fetch-btn:hover:not(:disabled) {
+            background: #B794DC;
+        }
+
+        .fetch-btn:disabled {
+            background: #D4B2F0;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            padding: 24px;
+            border-top: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #48bb78;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        .results-section {
+            padding: 24px;
+            border-top: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+        }
+
+        .results-stats {
+            background: #f7fafc;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .export-btn {
+            padding: 10px 16px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #cbd5e0;
+        }
+
+        .error {
+            background: #F5E6FF;
+            color: #7B4397;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            border: 1px solid #E8D5F2;
+        }
+
+        .success {
+            background: #F0E6FF;
+            color: #6B2C91;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #D4B2F0;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .export-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NFT Holder Snapshot Tool</h1>
+            <p>Get all holders of your NFT collection in seconds</p>
+        </div>
+
+        <div class="form-section">
+            <div class="error" id="errorMsg"></div>
+            
+            <div class="form-group">
+                <label for="contractAddress">Contract Address</label>
+                <input 
+                    type="text" 
+                    id="contractAddress" 
+                    placeholder="0x972F8E288F2846F60086775F48f0c1bC37465Cdf"
+                    value="0x972F8E288F2846F60086775F48f0c1bC37465Cdf"
+                >
+                <div class="small-text">Your NFT collection's contract address on Monad testnet</div>
+            </div>
+
+            <div class="form-group">
+                <label for="apiKey">BlockVision API Key</label>
+                <input 
+                    type="password" 
+                    id="apiKey" 
+                    placeholder="Enter your BlockVision API key"
+                >
+                <div class="small-text">
+                    Get your free API key from 
+                    <a href="https://docs.blockvision.org" target="_blank">BlockVision</a>
+                </div>
+            </div>
+
+            <button class="fetch-btn" onclick="fetchAllHolders()">
+                Get All Holders
+            </button>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Starting...</div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <div class="success">
+                    ✅ Successfully fetched all holders!
+                </div>
+            </div>
+
+            <div class="results-stats">
+                <div class="stat-row">
+                    <span>Total Holders:</span>
+                    <strong id="totalHolders">0</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Pages Fetched:</span>
+                    <strong id="pagesFetched">0</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Top Holder:</span>
+                    <strong id="topHolder">-</strong>
+                </div>
+            </div>
+
+            <div class="export-buttons">
+                <button class="export-btn" onclick="downloadCSV()">
+                    📊 Download CSV
+                </button>
+                <button class="export-btn" onclick="downloadJSON()">
+                    📋 Download JSON
+                </button>
+                <button class="export-btn" onclick="copyAddresses()">
+                    📝 Copy Addresses
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allHolders = [];
+        let contractAddress = '';
+        let apiKey = '';
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function updateProgress(current, total, message) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            const percentage = total > 0 ? (current / total) * 100 : 0;
+            progressFill.style.width = percentage + '%';
+            progressText.textContent = message;
+        }
+
+        function showResults() {
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('progressSection').style.display = 'none';
+            
+            // Update stats
+            document.getElementById('totalHolders').textContent = allHolders.length;
+            
+            if (allHolders.length > 0) {
+                // Find top holder
+                const topHolder = allHolders.reduce((max, holder) => {
+                    return parseInt(holder.amount) > parseInt(max.amount) ? holder : max;
+                });
+                
+                const topHolderText = `${topHolder.ownerAddress.substring(0, 8)}... (${topHolder.amount} tokens)`;
+                document.getElementById('topHolder').textContent = topHolderText;
+            }
+        }
+
+        async function fetchPage(pageIndex) {
+            const url = `https://api.blockvision.org/v2/monad/collection/holders?contractAddress=${contractAddress}&pageIndex=${pageIndex}&pageSize=50`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'accept': 'application/json',
+                    'x-api-key': apiKey
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            }
+
+            return await response.json();
+        }
+
+        async function fetchAllHolders() {
+            // Reset state
+            allHolders = [];
+            hideError();
+            
+            // Get inputs
+            contractAddress = document.getElementById('contractAddress').value.trim();
+            apiKey = document.getElementById('apiKey').value.trim();
+
+            // Validate inputs
+            if (!contractAddress || !apiKey) {
+                showError('Please enter both contract address and API key');
+                return;
+            }
+
+            if (!contractAddress.startsWith('0x') || contractAddress.length !== 42) {
+                showError('Invalid contract address format');
+                return;
+            }
+
+            // Show progress section
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // Disable button
+            const btn = document.querySelector('.fetch-btn');
+            btn.disabled = true;
+            btn.textContent = 'Fetching...';
+
+            try {
+                let pageIndex = 1;
+                let pagesFetched = 0;
+
+                while (true) {
+                    updateProgress(pageIndex - 1, pageIndex, `Fetching page ${pageIndex}...`);
+
+                    const result = await fetchPage(pageIndex);
+                    
+                    if (!result.result || !result.result.data) {
+                        throw new Error('Invalid API response format');
+                    }
+
+                    const holders = result.result.data;
+                    pagesFetched++;
+                    
+                    // Add holders to our collection
+                    allHolders.push(...holders);
+
+                    updateProgress(pageIndex, pageIndex, `Found ${allHolders.length} holders so far...`);
+
+                    // Check if we're done
+                    if (holders.length < 50) {
+                        // Last page
+                        break;
+                    }
+
+                    // Check for next page indicator
+                    if (result.result.nextPageIndex && result.result.nextPageIndex !== pageIndex) {
+                        pageIndex = result.result.nextPageIndex;
+                    } else {
+                        pageIndex++;
+                    }
+
+                    // Rate limiting - be nice to the API
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                document.getElementById('pagesFetched').textContent = pagesFetched;
+                showResults();
+
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+                document.getElementById('progressSection').style.display = 'none';
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.textContent = 'Get All Holders';
+            }
+        }
+
+        function downloadCSV() {
+            if (allHolders.length === 0) return;
+
+            const headers = ['Address', 'Amount', 'Percentage'];
+            const rows = allHolders.map(holder => [
+                holder.ownerAddress,
+                holder.amount,
+                holder.percentage + '%'
+            ]);
+
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(field => `"${field}"`).join(','))
+                .join('\n');
+
+            downloadFile(csvContent, 'nft-holders.csv', 'text/csv');
+        }
+
+        function downloadJSON() {
+            if (allHolders.length === 0) return;
+
+            const data = {
+                contractAddress,
+                totalHolders: allHolders.length,
+                fetchedAt: new Date().toISOString(),
+                holders: allHolders
+            };
+
+            downloadFile(JSON.stringify(data, null, 2), 'nft-holders.json', 'application/json');
+        }
+
+        function copyAddresses() {
+            if (allHolders.length === 0) return;
+
+            const addresses = allHolders.map(holder => holder.ownerAddress).join('\n');
+            
+            navigator.clipboard.writeText(addresses).then(() => {
+                // Temporarily change button text
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(() => {
+                showError('Failed to copy to clipboard');
+            });
+        }
+
+        function downloadFile(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
